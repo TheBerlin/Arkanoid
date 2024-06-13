@@ -1,6 +1,8 @@
 import processing.core.PApplet;
 import processing.core.PImage;
-import ddf.minim.*;
+//import ddf.minim.*;
+
+import java.beans.BeanProperty;
 import java.util.ArrayList;
 
 import javax.swing.border.Border;
@@ -46,6 +48,8 @@ public class Window extends PApplet {
     Stopwatch myStopwatch;
     private boolean timeCounter = false;
     private boolean bonusActive = false; // Flag to check bonus state
+    private int collectedBonuses = 0;
+    private int bonusSelector = 0;
 
     // private Minim minim;
     // private AudioPlayer ballHitTargetSound;
@@ -109,9 +113,10 @@ public class Window extends PApplet {
         initializeTargets();
 
         // Inizialisierung des Bonus
-        // bonus = new Bonus();
-        //bonus.setX_position(width / 2);
-        //bonus.setY_position(0);
+        int bonusDiameter = 30;
+        int bonusSpeedY = 1;
+        int bonusColor = color(255, 215, 0);
+        bonus = new Bonus(width / 2, -bonusDiameter, bonusDiameter, bonusSpeedY, bonusColor);
 
         // Initialisierung des Spielicons
         PImage gameIcon = loadImage("icon.png");
@@ -146,10 +151,108 @@ public class Window extends PApplet {
             background(193, 232, 255); // Hintergrundfarbe
 
             // Spawn bonus
-            if (!bonusActive && score >= 500) {
+            if (bonusActive) {
+                bonus.draw(this);
+                bonus.update();
+
+                if (bonus.isCollected(myStarship)) {
+                    //collectedBonuses++;
+                    bonusActive = false;
+                    switch (bonusSelector) {
+                        case 0:
+                            myStarship.setWidth(125);
+                            System.out.println("Bonus " + bonusSelector + " collected");
+                            break;
+                        case 1:
+                            ball.setSpeedX(1);
+                            ball.setSpeedY(1);
+                            System.out.println("Bonus " + bonusSelector + " collected");
+                            break;
+
+                    }
+                    // if (collectedBonuses == 1) {
+                    //     myStarship.setWidth(125);
+                    //     System.out.println("Bonus " + bonusSelector + " collected");
+                    // }
+                    // if (collectedBonuses == 2) {
+                    //     myStarship.setWidth(215);
+                    //     ball.setSpeedX(1);
+                    //     ball.setSpeedY(1);
+                    //     System.out.println("Bonus " + bonusSelector + " collected");
+                    // }
+                    
+                }
+
+                if (bonus.getY() > height) {
+                    bonusActive = false;
+                }
+            }
+
+            //Check score and activate bonus
+            if (score == 100 && !bonusActive || score == 500 && !bonusActive || score == 1500 && !bonusActive || score == 2200 && !bonusActive || score == 3200 && !bonusActive || score == 6100 && !bonusActive) {
                 bonusActive = true;
-                
-                //bonus.setY_position(0);
+                // Selektor for a random bonus (0 to 10)
+                bonusSelector = (int)(Math.random() * 10);
+                System.out.println("[ " + bonusSelector + " ]");
+                switch (bonusSelector) {
+                    case 0:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()-10, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 1:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()+10, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 2:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter(), bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 3:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()+20, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 4:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()-20, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 5:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter(), bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 6:
+                    bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter(), bonus.getSpeedY(), bonus.getColor());
+                    // Clear bonus selektor
+                    bonusSelector = 0;
+                    break;    
+                    case 7:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()+100, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 8:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()-5, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 9:
+                        bonus = new Bonus(width / 2, -bonus.getDiameter()+50, bonus.getDiameter()+25, bonus.getSpeedY(), bonus.getColor());
+                        // Clear bonus selektor
+                        bonusSelector = 0;
+                        break;
+                    case 10:
+                    bonus = new Bonus(width / 2, -bonus.getDiameter(), bonus.getDiameter()+50, bonus.getSpeedY(), bonus.getColor());
+                    // Clear bonus selektor
+                    bonusSelector = 0;
+                    break;                    
+                }
+                                
+
             }
 
             // Aktualisieren der Position des Raumschiffs basierend auf den Steuerungseingaben
@@ -164,8 +267,10 @@ public class Window extends PApplet {
             }
 
             // Zeichnen des Balls
+            // If super bonus is collected, spawn 2 more  balls within an array
             if (ball.getSpriteImage() != null) {
                 image(ball.getSpriteImage(), ball.getX_position(), ball.getY_position(), ball.getDiameter(), ball.getDiameter());
+
             } else {
                 fill(ball.getBallColor());
                 circle(ball.getX_position(), ball.getY_position(), ball.getDiameter());
@@ -549,13 +654,9 @@ public class Window extends PApplet {
         super.keyPressed();
         if (key == ESC) {
             key = 0;
-            isMenuActive = true;
-            if (isMenuActive) {
-                myStopwatch.start();
-            }
+            isMenuActive = !isMenuActive;
         } 
     }
-
 
     // With mouse input
     public void drawMenu () {
@@ -568,10 +669,12 @@ public class Window extends PApplet {
         resumeButton.update(this);
         restartButton.update(this);
         returnIntroButton.update(this);
+        quitgameButton.update(this);
 
         resumeButton.draw(this);
         restartButton.draw(this);
         returnIntroButton.draw(this);
+        quitgameButton.draw(this);
         
     }
 

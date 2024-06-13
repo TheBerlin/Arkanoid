@@ -1,5 +1,4 @@
 import processing.core.PApplet;
-
 /**
  * Die Main-Klasse enthält die main-Methode, um das Spiel zu starten.
  */
@@ -11,6 +10,5 @@ public class Main extends PApplet{
     public static void main(String[] args) {
         Window gameWindow = new Window(false);
         PApplet.runSketch(gameWindow.getProcessingArgs(), gameWindow);
-        
     }
 }

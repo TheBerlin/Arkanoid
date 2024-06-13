@@ -43,7 +43,22 @@ public class Bonus {
         y > myStarship.getY_position() && y < myStarship.getY_position() + myStarship.getHeight();
 
     }
-    
+
+    public int getY() {
+        return y;
+    }
+
+    public int getDiameter() {
+        return diameter;
+    }
+
+    public float getSpeedY() {
+        return speedY;
+    }
+
+    public int getColor() {
+        return color;
+    }
 }
 
 
