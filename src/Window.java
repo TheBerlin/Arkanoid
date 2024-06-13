@@ -556,6 +556,7 @@ public class Window extends PApplet {
         } 
     }
 
+
     // With mouse input
     public void drawMenu () {
         background(0, 0, 0, 150); 
@@ -567,12 +568,10 @@ public class Window extends PApplet {
         resumeButton.update(this);
         restartButton.update(this);
         returnIntroButton.update(this);
-        quitgameButton.update(this);
 
         resumeButton.draw(this);
         restartButton.draw(this);
         returnIntroButton.draw(this);
-        quitgameButton.draw(this);
         
     }
 
