@@ -170,17 +170,6 @@ public class Window extends PApplet {
                             break;
 
                     }
-                    // if (collectedBonuses == 1) {
-                    //     myStarship.setWidth(125);
-                    //     System.out.println("Bonus " + bonusSelector + " collected");
-                    // }
-                    // if (collectedBonuses == 2) {
-                    //     myStarship.setWidth(215);
-                    //     ball.setSpeedX(1);
-                    //     ball.setSpeedY(1);
-                    //     System.out.println("Bonus " + bonusSelector + " collected");
-                    // }
-                    
                 }
 
                 if (bonus.getY() > height) {
@@ -669,12 +658,10 @@ public class Window extends PApplet {
         resumeButton.update(this);
         restartButton.update(this);
         returnIntroButton.update(this);
-        quitgameButton.update(this);
 
         resumeButton.draw(this);
         restartButton.draw(this);
         returnIntroButton.draw(this);
-        quitgameButton.draw(this);
         
     }
 
