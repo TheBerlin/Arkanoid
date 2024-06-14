@@ -22,7 +22,7 @@ public class Button {
         app.fill(currentColor);
         app.rect(x, y, width, height);
         app.fill(0);
-        app.textSize(24);
+        app.textSize(18);
         app.textAlign(PApplet.CENTER, PApplet.CENTER);
         app.text(label, x + width / 2, y + height / 2);
     }

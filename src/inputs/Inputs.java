@@ -73,5 +73,4 @@ public class Inputs {
 
         starship.setY_position(y); // Setzen der y-Position des Raumschiffs
     }
-
 }

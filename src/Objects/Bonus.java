@@ -39,9 +39,11 @@ public class Bonus {
     }
 
     public boolean isCollected(Starship myStarship) {
-        return x > myStarship.getX_position() && x < myStarship.getX_position() + myStarship.getWidth() &&
-        y > myStarship.getY_position() && y < myStarship.getY_position() + myStarship.getHeight();
-
+        // Check for collision between the bonus and the starship
+        return (x + diameter / 2 > myStarship.getX_position() &&
+                x - diameter / 2 < myStarship.getX_position() + myStarship.getWidth() &&
+                y + diameter / 2 > myStarship.getY_position() &&
+                y - diameter / 2 < myStarship.getY_position() + myStarship.getHeight());
     }
 
     public int getY() {

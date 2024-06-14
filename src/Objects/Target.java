@@ -85,14 +85,41 @@ public class Target extends Object {
      * @param ballDiameter Der Durchmesser des Balls.
      * @return True, wenn das Ziel getroffen wurde, ansonsten False.
      */
-    public boolean hit(float ballX, float ballY, float ballDiameter) {
-        if (!destroyed && ballX + ballDiameter >= getX_position() && ballX <= getX_position() + width &&
-            ballY + ballDiameter >= getY_position() && ballY <= getY_position() + height) {
-            this.destroyed = true; // Ziel wurde getroffen und ist zerstört
-            return true;
+    // public boolean hit(float ballX, float ballY, float ballDiameter) {
+    //     if (!destroyed && ballX + ballDiameter >= getX_position() && ballX <= getX_position() + width &&
+    //         ballY + ballDiameter >= getY_position() && ballY <= getY_position() + height) {
+    //         this.destroyed = true; // Ziel wurde getroffen und ist zerstört
+    //         return true;
+    //     }
+    //     return false;
+    // }
+
+    public String hit(float ballX, float ballY, float ballDiameter) {
+    if (!destroyed && ballX + ballDiameter >= getX_position() && ballX <= getX_position() + width &&
+        ballY + ballDiameter >= getY_position() && ballY <= getY_position() + height) {
+        
+        this.destroyed = true; // Ziel wurde getroffen und ist zerstört
+        
+        // Calculate the distances to each side of the block
+        float leftDist = ballX + ballDiameter - getX_position();
+        float rightDist = getX_position() + width - ballX;
+        float topDist = ballY + ballDiameter - getY_position();
+        float bottomDist = getY_position() + height - ballY;
+        
+        // Determine the side that was hit
+        float minDist = Math.min(Math.min(leftDist, rightDist), Math.min(topDist, bottomDist));
+        if (minDist == leftDist) {
+            return "left";
+        } else if (minDist == rightDist) {
+            return "right";
+        } else if (minDist == topDist) {
+            return "top";
+        } else if (minDist == bottomDist) {
+            return "bottom";
         }
-        return false;
     }
+    return "none";
+}
 
     /**
      * Zeichnet das Ziel auf den Bildschirm.
