@@ -9,13 +9,15 @@ public class Bonus {
     private float speedY;
     private int color;
     private PImage spritImage;
+    private BonusType type; // type field
 
-    public Bonus(int x, int y, int diameter, float speedY, int color) {
+    public Bonus(int x, int y, int diameter, float speedY, int color, BonusType type) {
         this.x = x;
         this.y = y;
         this.diameter = diameter;
         this.speedY = speedY;
         this.color = color;
+        this.type = type;
     }
 
     public void draw(PApplet applet) {
@@ -60,6 +62,11 @@ public class Bonus {
 
     public int getColor() {
         return color;
+    }
+
+
+    public BonusType getType() {
+        return type; 
     }
 }
 

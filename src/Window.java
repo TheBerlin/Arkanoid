@@ -14,6 +14,7 @@ import Objects.Starship;
 import Objects.Target;
 import Objects.Bonus;
 import Objects.Button;
+import Objects.BonusType;
 
 
 /**
@@ -32,7 +33,6 @@ public class Window extends PApplet {
     private boolean startMoving = false; // Flag, um die Bewegung des Balls zu ändern
     private int speedMultiplier = 1; // Multiplikator für Ballgeschwindigkeit
     private boolean isBallVisible = true; // Flag, um Sichtbarkeit des Balls zu ändern
-    private int destroyedBricksCounter = 0; // Zähler für zerstörte Ziegel
     private int currentLevel = 1; // Aktuelles Level
     private int score = 0; // Score
     private ArrayList<Target> targets;
@@ -48,25 +48,13 @@ public class Window extends PApplet {
     private boolean isGameOver = false;
     private boolean isFullscreen; // Fullscreen state
     private boolean gameOverSoundplayed; // Gameover state for play sound
-    private boolean isGameEnd = false;
     
     // Bonuses
     private boolean isBonusActive = false;
-    private int bonusSelector = 0;
-    private int colorSelektor = 0; // from 0 to 9
-    
-    //For timer
-    private int bonusTimings[] = {
-        5, 10, 15, 20, 30
-    };
-    private int spawnTimings[] = {
-        7, 15, 25, 30
-    };
-    TimeManager spawnManager = new TimeManager(spawnTimings, bonusTimings);
-    private CountdownTimer bonusDurationTimer;
-    private CountdownTimer bonusSpawnTimer;
-    int bonusDuration;
-    int spawnCountDown;
+    private int lastBonusSpawnScore = 0; // The score at which the last bonus was spawned
+
+
+
 
 
 
@@ -142,24 +130,6 @@ public class Window extends PApplet {
         targets = new ArrayList<>();
         initializeTargets();
 
-        // Timer for bonus duration
-        
-
-        int bonusDiameter = 30;
-        int bonusSpeedY = 1;
-        int bonusColor[] = {
-            color(127, 0, 0), // dark red
-            color(255, 200, 200),// pink
-            color(255, 255, 0),   // yellow
-            color(0, 255, 255),   // aqua
-            color(0, 0, 0),   // black
-        };
-
-        int randomX = (int)(Math.random() * 1000);
-        System.out.println(randomX);
-        bonus = new Bonus(randomX, -bonusDiameter, bonusDiameter, bonusSpeedY, bonusColor[colorSelektor]);
-
-
         // Initialisierung des Spielicons
         PImage gameIcon = loadImage("icon.png");
         surface.setIcon(gameIcon);
@@ -202,31 +172,30 @@ public class Window extends PApplet {
         } else {
             background(193, 232, 255); // Hintergrundfarbe
 
-            // Spawn bonus
-            if (isBonusActive) {
-                bonus.draw(this);
-                bonus.update();
+            // Check score and spawn a bonus if necessary
+        if (!isBonusActive && (score >= lastBonusSpawnScore + 700)) {
+            spawnRandomBonus();
+            System.out.println(bonus.getType());
+            lastBonusSpawnScore = score; // Update the last bonus spawn score
+            
+        }
 
-                // if (bonus.isCollected(myStarship)) {
-                //     isBonusActive = false;
-                //     myStarship.setWidth(200);
-                //     //countdownTimer.start();
-                // }
+        // Handle bonus
+        if (isBonusActive && bonus != null) {
+            bonus.draw(this);
+            bonus.update();
 
+            if (bonus.getY() > height) {
+                isBonusActive = false;
+                bonus = null;
 
-                if (bonus.getY() > height); {
-                    isBonusActive = false;
-                }
+            } else if (bonus.isCollected(myStarship)) {
+                System.out.println("Bonus collected");
+                applyBonusEffekt(bonus);
+                isBonusActive = false;
+                bonus = null;
             }
-
-            // Check score and spawn a bonus
-            // if (&& !isBonusActive) {
-            //     isBonusActive = true;
-            //     // Selektor for a random bonus (0 to 10)
-            //     // bonusSelector = (int)(Math.random() * 5);
-            //     // colorSelektor = bonusSelector;
-            //     // System.out.println("BONUS: " + bonusSelector);  
-            // }
+        }
 
             // Aktualisieren der Position des Raumschiffs basierend auf den Steuerungseingaben
             if(isBallVisible) {
@@ -373,8 +342,6 @@ public class Window extends PApplet {
             if (!isBallVisible) {
                 isGameOver = true;
                 drawGameOver();
-                //stopTimer();
-                spawnManager.stop();
             }
         }      
     }
@@ -519,7 +486,6 @@ public class Window extends PApplet {
         
         if (allDestroyed) {
             targets.clear();
-            destroyedBricksCounter = 0;
             currentLevel++;
             initializeTargets();
         }
@@ -554,7 +520,6 @@ public class Window extends PApplet {
         targets.clear();
 
         // reset destroyed bricks conuter
-        destroyedBricksCounter = 0;
         score = 0;
 
         // Initialize new targets for the next level
@@ -613,7 +578,7 @@ public class Window extends PApplet {
                     startMoving = true; // Start moving the ball
 
                     // Start spawn timers
-                    spawnManager.reset();
+                    //spawnManager.reset();
 
 
                     ball.setSpeedX(2 * speedMultiplier); // Set constant speed for the ball
@@ -712,8 +677,63 @@ public class Window extends PApplet {
     }
 
 
-    public void stopTimer() {
-        bonusSpawnTimer.stop();
+    public void spawnRandomBonus() {
+        int x = width / 2;
+        if (isFullscreen) {
+            x = (int)(Math.random() * displayWidth);
+        }
+        else {
+            x = (int)(Math.random() * width);
+            System.out.println(x);
+        }
+
+        int y = height / 5;
+        int diameter = 10;
+        float speedY = 1;
+        int color = 127;
+
+        BonusType type;
+        double random = Math.random();
+        if (random < 0.33) {
+            type = BonusType.EXPAND;
+            color = color(0, 255, 0);
+        }
+        else if (random < 0.66) {
+            type = BonusType.SHRINK;
+            color = color(255, 0, 0);
+        }
+        else {
+            type = BonusType.SPEED_PLUS;
+            color = color(0, 255, 255);
+
+        }
+
+        bonus = new Bonus(x, y, diameter, speedY, color, type);
+        isBonusActive = true;
     }
+
+
+    private void applyBonusEffekt(Bonus bonus) {
+        switch (bonus.getType()) {
+            case EXPAND:
+                myStarship.setWidth(myStarship.getWidth() + 50);
+                break;
+            case SHRINK:
+                if (myStarship.getWidth() >= 75) {
+                    myStarship.setWidth(myStarship.getWidth() -  40);
+                }
+                else if (myStarship.getWidth() < 25) {
+                    myStarship.setWidth(myStarship.getWidth());
+                }
+                else {
+                    myStarship.setWidth(myStarship.getWidth() - 50);
+                }
+                break;
+            case SPEED_PLUS:
+            ball.setSpeedX(ball.getSpeedX()+1);
+            ball.setSpeedY(ball.getSpeedY()+1);
+        }
+    }
+
 
 }
