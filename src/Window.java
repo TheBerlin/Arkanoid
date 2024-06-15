@@ -1,5 +1,7 @@
 import processing.core.PApplet;
 import processing.core.PImage;
+import processing.data.JSONArray;
+import processing.data.JSONObject;
 import processing.core.PFont;
 import ddf.minim.Minim;
 import ddf.minim.AudioPlayer;
@@ -33,34 +35,33 @@ public class Window extends PApplet {
     private boolean startMoving = false; // Flag, um die Bewegung des Balls zu ändern
     private int speedMultiplier = 1; // Multiplikator für Ballgeschwindigkeit
     private boolean isBallVisible = true; // Flag, um Sichtbarkeit des Balls zu ändern
+
+    public static final int maxLevel = 3;
     private int currentLevel = 1; // Aktuelles Level
     private int score = 0; // Score
     private ArrayList<Target> targets;
+
     private Button resumeButton;
     private Button restartButton;
     private Button fullscreenButton;
     private Button playgameButton;
+    private Button highscoresButton;
     private Button quitgameButton;
     private Button returnIntroButton;
     private Button tryAgainButton;
+    private Button nameGenerateButton;
+
     private boolean isIntroActive = true; // Intro screen state
+    private boolean isHighscoresActive = false; // Intro screen state
     private boolean isMenuActive = false; // Menu state 
     private boolean isGameOver = false;
     private boolean isFullscreen; // Fullscreen state
     private boolean gameOverSoundplayed; // Gameover state for play sound
-    
+    private boolean isGameEnd = false;
+
     // Bonuses
     private boolean isBonusActive = false;
     private int lastBonusSpawnScore = 0; // The score at which the last bonus was spawned
-
-
-
-
-
-
-
-
-
 
     private Minim minim;
     private AudioPlayer ballHitTargetSound;
@@ -70,7 +71,22 @@ public class Window extends PApplet {
     private AudioPlayer backgroundMusic;
 
     private PFont gameFont;
+    private int smallFontSize;
+    private int mediumFontSize;
+    private int bigFontSize;    
 
+    private String[] nameAdjectives = {"Innocent", "Brave", "Lonely", "Soft", "Smooth", "Big", "Blue", "Dancing", "Lazy", "Spicy"};
+    private String[] nameNouns = {"Warrior", "Bread", "Papa", "Shoe", "Dog", "Car", "Ninja", "Guy", "Gamer", "Ball", "Dragon"};
+    private String[] nameNumbers = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    private String playerName = "";
+
+    private boolean gameActive;
+    private boolean gamePaused;
+    private int startTime = 0;
+    private int totalPausedTime = 0;
+    private int pauseStartTime = 0;
+    private int elapsedTime = 0;
+    private int finalElapsedTime = 0;
 
     public Window(boolean isFullscreen) {
         this.isFullscreen = isFullscreen;
@@ -146,6 +162,14 @@ public class Window extends PApplet {
         // Initialisierung der Gameover Buttons
         initializeGameOverButtons();
 
+        // Generate first name
+        generateRandomName();
+
+        // Initialize font size
+        smallFontSize = width / 40;
+        mediumFontSize = width / 25;
+        bigFontSize = width / 16;
+
         // Initialize Minim
         minim = new Minim(this);
 
@@ -167,8 +191,14 @@ public class Window extends PApplet {
     public void draw() {
         if (isIntroActive) {
             drawIntro();
+        } else if (isHighscoresActive) {
+            drawHighscore();
         } else if (isMenuActive) {
             drawMenu();
+        } else if (isGameOver) {
+            drawGameOver();
+        } else if(isGameEnd) {
+            drawGameEnd();
         } else {
             background(193, 232, 255); // Hintergrundfarbe
 
@@ -206,17 +236,24 @@ public class Window extends PApplet {
             if (myStarship.getSpriteImage() != null) {
                 image(myStarship.getSpriteImage(), myStarship.getX_position(), myStarship.getY_position(), myStarship.getWidth(), myStarship.getHeight());
             } else {
-                fill(myStarship.getColor());
-                rect(myStarship.getX_position(), myStarship.getY_position(), myStarship.getWidth(), myStarship.getHeight());
+                if (isFullscreen) {
+                    myStarship.setWidth(175);
+                    fill(myStarship.getColor());
+                    rect(myStarship.getX_position(), myStarship.getY_position(), myStarship.getWidth(), myStarship.getHeight());
+                }
+                else {
+                    fill(myStarship.getColor());
+                    rect(myStarship.getX_position(), myStarship.getY_position(), myStarship.getWidth(), myStarship.getHeight());
+                }
             }
 
             // Zeichnen des Balls
             if (ball.getSpriteImage() != null) {
                 image(ball.getSpriteImage(), ball.getX_position(), ball.getY_position(), ball.getDiameter(), ball.getDiameter());
             } else {
-                fill(ball.getBallColor());
-                circle(ball.getX_position(), ball.getY_position(), ball.getDiameter());
-            }
+                    fill(ball.getBallColor());
+                    circle(ball.getX_position(), ball.getY_position(), ball.getDiameter());
+                }
 
             // Zeichnen der Ziele (Ziegel)
             for (Target target : targets) {
@@ -237,7 +274,6 @@ public class Window extends PApplet {
 
                 hitStarshipSound.rewind();
                 hitStarshipSound.play();
-                System.out.println(ball.getSpeedX());
 
                 // The ball hit the left side of the starship.
                 if (ball.getX_position() >= myStarship.getX_position() && 
@@ -325,23 +361,32 @@ public class Window extends PApplet {
                         break;
                     default:        
                 }
-                displayScore(); // Anzeige der Punktzahl
+                displayTextOnGame(); // Anzeige der Punktzahl
             }
 
             // Überprüfen, ob alle Ziele (Ziegel) zerstört wurden, um die Gewinnbedingung zu überprüfen
             if (checkWinConditions()) {
-                fill(0, 255, 0); // Grün für Gewinnnachricht
-                textSize(20);
-                textAlign(CENTER, CENTER);
-                text("Level abgeschlossen", width / 2, (height / 2 - 10));
-                text("Linksklick, um fortzufahren", width / 2, (height / 2 + 10));
-                noLoop(); // Spiel pausieren
+                System.out.println(elapsedTime);
+                System.out.println(finalElapsedTime);
+                finalElapsedTime += elapsedTime;
+                if (maxLevel == currentLevel) {
+                    System.out.println("Game end");
+                    savePlayerName();
+                    isGameEnd = true;
+                }
+                else {        
+                    fill(0, 255, 0); // Grün für Gewinnnachricht
+                    textSize(20);
+                    textAlign(CENTER, CENTER);
+                    text("Level abgeschlossen", width / 2, (height / 2 - 10));
+                    text("Linksklick, um fortzufahren", width / 2, (height / 2 + 10));
+                    noLoop(); // Spiel pausieren
+                }    
             }
 
             // Anzeige der Spielende-Nachricht, wenn der Ball nicht mehr sichtbar ist
             if (!isBallVisible) {
                 isGameOver = true;
-                drawGameOver();
             }
         }      
     }
@@ -387,13 +432,15 @@ public class Window extends PApplet {
                 // Targets quanttiy is fixed to the current level
                 // Targets quantity cannot be changed with window resolution
                 // Use this to set up a targets quantity for single row
-                for (int i = 0; i < 15; i++) {
-                    // Use this to set up number of rows
-                    for (int j = 0; j < 6; j++) {
-                        int color = rowColors[j % rowColors.length]; // Assign color based on row index
-                        targets.add(new Target(borderBuffer + i * (targetWidth+2), targetWidth + j * (targetHeight+2), targetWidth, targetHeight, color)); // Assign color to targets
-                    }
-                }
+                
+                // for (int i = 0; i < 15; i++) {
+                //     // Use this to set up number of rows
+                //     for (int j = 0; j < 6; j++) {
+                //         int color = rowColors[j % rowColors.length]; // Assign color based on row index
+                //         targets.add(new Target(borderBuffer + i * (targetWidth+2), targetWidth + j * (targetHeight+2), targetWidth, targetHeight, color)); // Assign color to targets
+                //     }
+                // }
+                targets.add(new Target(borderBuffer + 7 * (targetWidth+2), targetWidth + 3 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
                 break;
         
             case 2:
@@ -409,68 +456,64 @@ public class Window extends PApplet {
                 // Targets quanttiy is fixed to the current level
                 // Targets quantity cannot be changed with window resolution
                 // Use this to set up a targets quantity for single row
-                for (int i = 0; i < 15; i++) {
-                    // Use this to set up number of rows
-                    if (i % 3 == 0) {
-                        continue;
-                    }
-                    for (int j = 0; j < 7; j++) {
-                        int color = rowColors[j % rowColors.length]; // Assign color based on row index
-                        targets.add(new Target(borderBuffer + i * (targetWidth-1), targetWidth + j * (targetHeight+2), targetWidth, targetHeight, color)); // Assign color to targets
-                    }
-                }
-                break;
+                
+                // for (int i = 0; i < 15; i++) {
+                //     // Use this to set up number of rows
+                //     if (i % 3 == 0) {
+                //         continue;
+                //     }
+                //     for (int j = 0; j < 7; j++) {
+                //         int color = rowColors[j % rowColors.length]; // Assign color based on row index
+                //         targets.add(new Target(borderBuffer + i * (targetWidth-1), targetWidth + j * (targetHeight+2), targetWidth, targetHeight, color)); // Assign color to targets
+                //     }
+                // }
+                // break;
+                targets.add(new Target(borderBuffer + 7 * (targetWidth+2), targetWidth + 5 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
+                targets.add(new Target(borderBuffer + 10 * (targetWidth+2), targetWidth + 5 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
+
             
             case 3:
             // Targets quanttiy is fixed to the current level
             // Targets quantity cannot be changed with window resolution
             // Use this to set up a targets quantity for single row
-                for (int i = 0; i < 6; i++) {
+                
+            for (int i = 0; i < 6; i++) {
                     // Use this to set up number of rows
                     for (int j = 0; j < 5; j++) {
                         int color = rowColors[j % rowColors.length]; // Assign color based on row index
                         targets.add(new Target(borderBuffer + i * (targetWidth+2), targetWidth + j * (targetHeight+2), targetWidth, targetHeight, color)); // Assign color to targets
                     }
                 }
+            // targets.add(new Target(borderBuffer + 7 * (targetWidth+2), targetWidth + 3 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
+            // targets.add(new Target(borderBuffer + 10 * (targetWidth+2), targetWidth + 4 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
+            // targets.add(new Target(borderBuffer + 13 * (targetWidth+2), targetWidth + 5 * (targetHeight+2), targetWidth, targetHeight, color(255, 0, 0)));
         }
     }
 
     public void initializeMenuButtons () {
-        if (isFullscreen) {
-            resumeButton = new Button(width / 2 - 200, height / 2 - 60, 400, 40, "Resume");
-            restartButton = new Button(width / 2 - 200, height / 2 - 10, 400, 40, "Restart");
-            returnIntroButton = new Button(width / 2 - 200, height / 2 + 40, 400, 40, "Back to main menu");
-        }
-        else {
-            resumeButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Resume");
-            restartButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Restart");
-            returnIntroButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Back to main menu");
-            //returnIntroButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Back to main menu");
-        }
-        
+        resumeButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Resume");
+        restartButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Restart");
+        returnIntroButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Back to main menu");
     }
 
     public void initializeIntroButtons () {
-        if (isFullscreen) {
-            playgameButton = new Button(width / 2 - 200, height / 2 - 60, 400, 40, "Play");
-            quitgameButton = new Button(width / 2 - 200, height / 2 + 40, 400, 40, "Quit game");    
-        }
-        else {
-            playgameButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Play");
-            quitgameButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Quit game");
-        }
+        playgameButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Play");
+        highscoresButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Highscores");
+        nameGenerateButton =  new Button(width / 2 - 100, height / 2 + 90, 200, 40, "Get a new name");
+        quitgameButton = new Button(width / 2 - 100, height / 2 + 140, 200, 40, "Quit game");    
 
         if (isFullscreen) {
-            fullscreenButton = new Button(width / 2 - 200, height / 2 - 10, 400, 40, "Fullscreen: On");
+            fullscreenButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Fullscreen: On");
         } else {
-            fullscreenButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Fullscreen: Off");
+            fullscreenButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Fullscreen: Off");
         }
     }
 
+   
     public void initializeGameOverButtons () {
-        tryAgainButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Try again");
+        tryAgainButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Try again");
     }
-
+    
     /**
      * Überprüft, ob alle Ziele (Ziegel) zerstört wurden, um die Gewinnbedingung zu überprüfen.
      * @return True, wenn alle Ziele zerstört wurden, ansonsten False.
@@ -484,14 +527,8 @@ public class Window extends PApplet {
             }
         }
         
-        if (allDestroyed) {
-            targets.clear();
-            currentLevel++;
-            initializeTargets();
-        }
         
         return allDestroyed;
-        
     }
     
 
@@ -502,6 +539,7 @@ public class Window extends PApplet {
         int starshipInitialY = height - myStarship.getHeight();
         myStarship.setX_position(starshipInitialX);
         myStarship.setY_position(starshipInitialY);
+        myStarship.setWidth(75);
 
         // Reset the ball position
         ball.setX_position(starshipInitialX + (myStarship.getWidth() / 2) - ball.getDiameter() / 2);
@@ -516,17 +554,19 @@ public class Window extends PApplet {
      * Setzt das Spiel und die Spielobjekte zurück, um ein neues Spiel zu starten.
      */
     public void resetGame() {
+        System.out.println("Game reset");
         // clear targets
         targets.clear();
 
-        // reset destroyed bricks conuter
-        score = 0;
 
         // Initialize new targets for the next level
         initializeTargets();
 
         // Reset starship and ball positions
         resetStarshipAndBall();
+
+        // Reset bonus
+        resetBonus();
 
         // Reset the initial launch
         initialLaunch = false;
@@ -536,6 +576,11 @@ public class Window extends PApplet {
 
         gameOverSoundplayed = false;
 
+        score = 0;
+        startTime = 0;
+        totalPausedTime = 0;
+        pauseStartTime = 0;
+        elapsedTime = finalElapsedTime;  
     }
     
 
@@ -543,76 +588,127 @@ public class Window extends PApplet {
      * Behandelt den Mausklick, um das Spiel zu starten und fortzusetzen.
      */ 
 
-    @Override
-    public void mousePressed() {
-        super.mousePressed();
-        if (isIntroActive) {
-            if (playgameButton.isClicked(this)) {
-                isIntroActive = false; 
-            } else if (fullscreenButton.isClicked(this)) {
-                toggleFullscreen();
-            } else if (quitgameButton.isClicked(this)) {
-                exit();
-            }
-        } else if (isMenuActive) {
-            if (resumeButton.isClicked(this)) {
-                isMenuActive = false; 
-            } else if (restartButton.isClicked(this)) {
-                resetGame(); 
-                isMenuActive = false;
-            } else if (returnIntroButton.isClicked(this)) {
-                resetGame();
-                isMenuActive = false;
-                isIntroActive = true;
-            } 
-        } else if (isGameOver) {
-            if (tryAgainButton.isClicked(this)) {
-                isGameOver = false;
-                resetGame();
-            }
-        } else {
-            if (mouseButton == LEFT) {
-                if (!initialLaunch) {
-                    // Start the game if it hasn't started yet
-                    initialLaunch = true;
-                    startMoving = true; // Start moving the ball
-
-                    // Start spawn timers
-                    //spawnManager.reset();
-
-
-                    ball.setSpeedX(2 * speedMultiplier); // Set constant speed for the ball
-                    ball.setSpeedY(2 * speedMultiplier);
-                } else if (checkWinConditions()) {
-                    // Reset the game for the next level if all targets are destroyed
-                    resetGame();
-                    loop(); // Resume the game loop
-                }
-            }
-        }
-    }
+     @Override
+     public void mousePressed() {
+         super.mousePressed();
+         if (isIntroActive) {
+             if (playgameButton.isClicked(this)) {
+                 isIntroActive = false; 
+             } else if (highscoresButton.isClicked(this)) {
+                 System.out.println("highscore button clicked");
+                 isIntroActive = false;
+                 isHighscoresActive = true;
+             } else if (nameGenerateButton.isClicked(this)) {
+                 generateRandomName();
+             } else if (fullscreenButton.isClicked(this)) {
+                 toggleFullscreen();
+             } else if (quitgameButton.isClicked(this)) {
+                 exit();
+             }
+         } else if (isMenuActive) {
+             if (resumeButton.isClicked(this)) {
+                 resumeGame();
+                 isMenuActive = false; 
+             } else if (restartButton.isClicked(this)) {
+                 resetGame(); 
+                 isMenuActive = false;
+             } else if (returnIntroButton.isClicked(this)) {
+                 resetGame();
+                 isMenuActive = false;
+                 isIntroActive = true;
+             } 
+         } else if (isGameOver) {
+             if (tryAgainButton.isClicked(this)) {
+                 isGameOver = false;
+                 resetGame();
+             } else if (returnIntroButton.isClicked(this)) {
+                 resetGame();
+                 isGameOver = false;
+                 isIntroActive = true;
+             } 
+         } else if (isGameEnd) {
+             if (returnIntroButton.isClicked(this)) {
+                 isGameEnd = false;
+                 isIntroActive = true;
+                 resetGame();
+             } 
+         } else if (checkWinConditions()) {
+             currentLevel++;
+             resetGame();
+             loop(); // Resume the game loop
+         } else {
+             if (mouseButton == LEFT) {
+                 if (!initialLaunch) {
+                     // Start the game if it hasn't started yet
+                     startGame();
+                     initialLaunch = true;
+                     startMoving = true; // Start moving the ball
+                     if (isFullscreen) {
+                        ball.setSpeedX(width/800 * speedMultiplier); // Set constant speed for the ball
+                        ball.setSpeedY(width/800 * speedMultiplier);   
+                     }
+                     else {
+                        ball.setSpeedX(width/400 * speedMultiplier); // Set constant speed for the ball
+                        ball.setSpeedY(width/400 * speedMultiplier);
+                     }
+                 }
+             }
+         }
+     }
     
 
      /**
      * Anzeige der Spielerpunktzahl.
      */
-    public void displayScore() {
+    public void displayTextOnGame() {
+        if(!initialLaunch) {
+            elapsedTime = 0;
+            fill(255, 255, 0);
+            textSize(mediumFontSize);
+            textAlign(CENTER, CENTER);
+            text("Left click to start", width/2, height/2 - height/20);
+        } else {
+            elapsedTime = (millis() - startTime - totalPausedTime) / 1000;
+        }
+
         fill(0);
-        textSize(20);
+        textSize(smallFontSize);
         textAlign(RIGHT, BOTTOM);
         text("Score: " + score, width - 10, height - 40);
+
+        textAlign(LEFT, TOP);
+        text("Player: " + playerName, width/30, height/30);
+
+        textAlign(CENTER, TOP);
+        text("Time: " + (finalElapsedTime+elapsedTime), (width - width / 3), height/30);
+
+        textAlign(RIGHT, TOP);
+        text("Level: " + currentLevel, width - width/30, height/30);
+
+        
+
+        if (checkWinConditions()) {
+                fill(0, 255, 0); // Grün für Gewinnnachricht
+                textSize(20);
+                textAlign(CENTER, CENTER);
+                text("Level abgeschlossen", width / 2, (height / 2 - 10));
+                text("Linksklick, um fortzufahren", width / 2, (height / 2 + 10));
+        }
     }
 
     public String[] getProcessingArgs() {
         return processingArgs; 
     }
 
+
+
     @Override
     public void keyPressed() {
         super.keyPressed();
         if (key == ESC) {
             key = 0;
-            isMenuActive = !isMenuActive;
+            pauseGame();
+            isMenuActive = true;
         } 
     }
 
@@ -622,7 +718,7 @@ public class Window extends PApplet {
         fill(255);
         textSize(32);
         textAlign(CENTER, CENTER);
-        text("Menu", width / 2, height / 2 - 150);
+        text("Game is paused", width / 2, height / 2 - 150);
 
         resumeButton.update(this);
         restartButton.update(this);
@@ -636,16 +732,23 @@ public class Window extends PApplet {
     public void drawIntro () {
         background(0, 0, 0, 150); 
         fill(255);
-        textSize(50);
         textAlign(CENTER, CENTER);
         textFont(gameFont);
-        text("ARKANOID", width / 2, height / 2 - 150);
+        textSize(60);
+        text("ARKANOID", width / 2, height / 2 - 250);
+
+        textSize(40);
+        text("Welcome" + " " + playerName, width / 2, height / 2 - 150);
 
         playgameButton.update(this);
+        highscoresButton.update(this);
         fullscreenButton.update(this);
+        nameGenerateButton.update(this);
         quitgameButton.update(this);
 
         playgameButton.draw(this);
+        highscoresButton.draw(this);
+        nameGenerateButton.draw(this);
         fullscreenButton.draw(this);
         quitgameButton.draw(this);
     }
@@ -654,15 +757,50 @@ public class Window extends PApplet {
         background(0, 0, 0, 150); 
         textFont(gameFont); 
         fill(255,0 ,0); 
-        textSize(50); 
+        textSize(bigFontSize); 
         textAlign(CENTER, CENTER); 
-        text("GAME OVER", width / 2, height / 2 - 150); 
+        text("GAME OVER", width / 2, height / 2 - 250); 
+
+        textSize(mediumFontSize); 
+        text("Score: ", width / 2, height / 2 - 150); 
 
         tryAgainButton.update(this);
         returnIntroButton.update(this);
 
         tryAgainButton.draw(this);
-        textSize(10);
+        returnIntroButton.draw(this);
+    }
+
+    public void drawGameEnd() {
+        background(0, 0, 0, 150); 
+        textFont(gameFont); 
+        fill(0,255 ,0); 
+        textSize(bigFontSize - width/40); 
+        textAlign(CENTER, CENTER); 
+        text("Congratulations " + playerName, width / 2, height / 2 - 250); 
+
+        textSize(mediumFontSize); 
+        text("Time: " + finalElapsedTime, (width / 2), height / 2 - 150); 
+
+        returnIntroButton.update(this);
+        returnIntroButton.draw(this);
+    }
+
+    public void drawHighscore() {
+        background(0, 0, 0, 150); 
+        textFont(gameFont); 
+        fill(255); 
+        textSize(bigFontSize - width/40); 
+        textAlign(CENTER, CENTER); 
+        text("Highscores", width / 2, height / 2 - 250); 
+
+        textSize(mediumFontSize - width/80); 
+        textAlign(TOP, LEFT); 
+        text("Player", width / 20, height / 10); 
+        textAlign(TOP, RIGHT); 
+        text("Time", width - width / 20, height / 10); 
+
+        returnIntroButton.update(this);
         returnIntroButton.draw(this);
     }
 
@@ -674,6 +812,59 @@ public class Window extends PApplet {
         noLoop(); // Stop the current sketch
         Window gameWindow = new Window(isFullscreen);
         PApplet.runSketch(gameWindow.getProcessingArgs(), gameWindow);
+    }
+
+
+    public void generateRandomName() {
+        int adjIndex = (int) random(nameAdjectives.length);
+        int nounIndex = (int) random(nameNouns.length);
+        int numberIndex = (int) random(nameNumbers.length);
+        playerName = nameAdjectives[adjIndex] + "_" + nameNouns[nounIndex] + "_" + nameNumbers[numberIndex];
+    }
+
+
+    public void savePlayerName() {
+        JSONArray dataArray;
+        JSONObject newPlayerData = new JSONObject();
+        newPlayerData.setString("player", playerName);
+        newPlayerData.setString("time", finalElapsedTime/60 + "min " + finalElapsedTime%60 + "sec");
+
+        File file = new File(sketchPath("highscores.json"));
+        if (file.exists()) {
+            dataArray = loadJSONArray("highscores.json");
+        } else {
+            dataArray = new JSONArray();
+        }
+
+        dataArray.append(newPlayerData);
+        saveJSONArray(dataArray, "highscores.json");
+    }
+
+
+    public void startGame() {
+        System.out.println("Game starts");
+        startTime = millis();
+        // totalPausedTime = 0;
+        // gameActive = true;
+        // gamePaused = false;
+    }
+
+    public void pauseGame() {
+        System.out.println("Game is paused");
+        pauseStartTime = millis();
+        // if (gameActive && !gamePaused) {
+        //     gamePaused = true;
+        //     pauseStartTime = millis();
+        // }
+    }
+
+    public void resumeGame() {
+        System.out.println("Game resumes");
+        totalPausedTime += millis() - pauseStartTime;
+        // if (gamePaused) {
+        //     gamePaused = false;
+        //     totalPausedTime += millis() - pauseStartTime;
+        // }
     }
 
 
@@ -716,7 +907,7 @@ public class Window extends PApplet {
     private void applyBonusEffekt(Bonus bonus) {
         switch (bonus.getType()) {
             case EXPAND:
-                myStarship.setWidth(myStarship.getWidth() + 50);
+                myStarship.setWidth(myStarship.getWidth() + 50); 
                 break;
             case SHRINK:
                 if (myStarship.getWidth() >= 75) {
@@ -735,5 +926,8 @@ public class Window extends PApplet {
         }
     }
 
+    public void resetBonus() {
+        bonus = null;
+    }
 
 }
