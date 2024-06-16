@@ -28,7 +28,7 @@ public class Window extends PApplet {
     private Ball ball; // Ball
     private Starship myStarship; // Starship
     private Bonus bonus;
-    private Inputs inputs; // Steerngseingaben
+    private Inputs inputs; // SteerngseingabenR
     private PImage ballSprite; // Sprite für den Ball
     private PImage starshipSprite; // Sprite für das Starship
     private boolean initialLaunch = false; // Flag, um das Spiel starten/beenden
@@ -927,7 +927,9 @@ public class Window extends PApplet {
     }
 
     public void resetBonus() {
+        lastBonusSpawnScore = 0;
         bonus = null;
+        isBonusActive = false;
     }
 
 }
