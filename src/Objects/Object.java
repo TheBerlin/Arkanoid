@@ -55,4 +55,5 @@ public abstract class Object {
     public void setColor(int color) {
         this.color = color;
     }
+
 }

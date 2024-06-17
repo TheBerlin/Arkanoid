@@ -31,8 +31,6 @@ public class Window extends PApplet {
     private Bonus bonus;
     private Inputs inputs; // SteerngseingabenR
     private PImage ballSprite; // Sprite für den Ball
-    private
-     PImage starshipSprite; // Sprite für das Starship
     private boolean initialLaunch = false; // Flag, um das Spiel starten/beenden
     private boolean startMoving = false; // Flag, um die Bewegung des Balls zu ändern
     private int speedMultiplier = 1; // Multiplikator für Ballgeschwindigkeit
@@ -69,7 +67,6 @@ public class Window extends PApplet {
     private Minim minim;
     private AudioPlayer ballHitTargetSound;
     private AudioPlayer gameOverSound;
-    private AudioPlayer gameEndSound;
     private AudioPlayer hitStarshipSound;
     private AudioPlayer backgroundMusic;
 
@@ -83,8 +80,6 @@ public class Window extends PApplet {
     private String[] nameNumbers = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
     private String playerName = "";
 
-    private boolean gameActive;
-    private boolean gamePaused;
     private int startTime = 0;
     private int totalPausedTime = 0;
     private int pauseStartTime = 0;
@@ -181,7 +176,7 @@ public class Window extends PApplet {
         // Load sound effects
         ballHitTargetSound = minim.loadFile("sfx/block-destroyed.wav");
         gameOverSound = minim.loadFile("sfx/game-over.wav");
-        gameEndSound = minim.loadFile("sfx/game-end.wav");
+        // gameEndSound = minim.loadFile("sfx/game-end.wav");
         hitStarshipSound = minim.loadFile("sfx/paddle-hit.wav");
         backgroundMusic = minim.loadFile("sfx/bg-music1.wav");
 
