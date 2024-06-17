@@ -7,6 +7,7 @@ public abstract class Object {
     private float x_position, y_position; // Die x- und y-Position des Objekts
     private int color; // Die Farbe des Objekts
 
+    
     /**
      * Gibt die x-Position des Objekts zurück.
      * @return Die x-Position des Objekts.

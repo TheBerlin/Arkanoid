@@ -8,6 +8,7 @@ import ddf.minim.AudioPlayer;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import inputs.Inputs;
 
@@ -30,7 +31,8 @@ public class Window extends PApplet {
     private Bonus bonus;
     private Inputs inputs; // SteerngseingabenR
     private PImage ballSprite; // Sprite für den Ball
-    private PImage starshipSprite; // Sprite für das Starship
+    private
+     PImage starshipSprite; // Sprite für das Starship
     private boolean initialLaunch = false; // Flag, um das Spiel starten/beenden
     private boolean startMoving = false; // Flag, um die Bewegung des Balls zu ändern
     private int speedMultiplier = 1; // Multiplikator für Ballgeschwindigkeit
@@ -48,6 +50,7 @@ public class Window extends PApplet {
     private Button highscoresButton;
     private Button quitgameButton;
     private Button returnIntroButton;
+    private Button returnIntroHSButton;
     private Button tryAgainButton;
     private Button nameGenerateButton;
 
@@ -87,6 +90,8 @@ public class Window extends PApplet {
     private int pauseStartTime = 0;
     private int elapsedTime = 0;
     private int finalElapsedTime = 0;
+
+    private JSONArray dataArray;
 
     public Window(boolean isFullscreen) {
         this.isFullscreen = isFullscreen;
@@ -203,29 +208,29 @@ public class Window extends PApplet {
             background(193, 232, 255); // Hintergrundfarbe
 
             // Check score and spawn a bonus if necessary
-        if (!isBonusActive && (score >= lastBonusSpawnScore + 700)) {
-            spawnRandomBonus();
-            System.out.println(bonus.getType());
-            lastBonusSpawnScore = score; // Update the last bonus spawn score
-            
-        }
-
-        // Handle bonus
-        if (isBonusActive && bonus != null) {
-            bonus.draw(this);
-            bonus.update();
-
-            if (bonus.getY() > height) {
-                isBonusActive = false;
-                bonus = null;
-
-            } else if (bonus.isCollected(myStarship)) {
-                System.out.println("Bonus collected");
-                applyBonusEffekt(bonus);
-                isBonusActive = false;
-                bonus = null;
+            if (!isBonusActive && (score >= lastBonusSpawnScore + 700)) {
+                spawnRandomBonus();
+                System.out.println(bonus.getType());
+                lastBonusSpawnScore = score; // Update the last bonus spawn score
+                
             }
-        }
+
+            // Handle bonus
+            if (isBonusActive && bonus != null) {
+                bonus.draw(this);
+                bonus.update();
+
+                if (bonus.getY() > height) {
+                    isBonusActive = false;
+                    bonus = null;
+
+                } else if (bonus.isCollected(myStarship)) {
+                    System.out.println("Bonus collected");
+                    applyBonusEffekt(bonus);
+                    isBonusActive = false;
+                    bonus = null;
+                }
+            }
 
             // Aktualisieren der Position des Raumschiffs basierend auf den Steuerungseingaben
             if(isBallVisible) {
@@ -322,14 +327,14 @@ public class Window extends PApplet {
             // Überprüfen, ob der Ball den unteren Bildschirmrand erreicht hat
             // Das Spiel endet, wenn der Ball den unteren Bildschirmrand erreicht
             if (ball.getY_position() + ball.getDiameter() >= height) {
-            startMoving = false;
-            isBallVisible = false;
-            if (!gameOverSoundplayed) {
-                gameOverSoundplayed = true;
-                gameOverSound.rewind();
-                gameOverSound.play();
+                startMoving = false;
+                isBallVisible = false;
+                if (!gameOverSoundplayed) {
+                    gameOverSoundplayed = true;
+                    gameOverSound.rewind();
+                    gameOverSound.play();
+                }
             }
-        }
 
             // Kollisionserkennung mit den Zielen (Ziegeln)
             for (Target target : targets) {
@@ -477,7 +482,7 @@ public class Window extends PApplet {
             // Targets quantity cannot be changed with window resolution
             // Use this to set up a targets quantity for single row
                 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 1; i++) {
                     // Use this to set up number of rows
                     for (int j = 0; j < 5; j++) {
                         int color = rowColors[j % rowColors.length]; // Assign color based on row index
@@ -494,6 +499,7 @@ public class Window extends PApplet {
         resumeButton = new Button(width / 2 - 100, height / 2 - 60, 200, 40, "Resume");
         restartButton = new Button(width / 2 - 100, height / 2 - 10, 200, 40, "Restart");
         returnIntroButton = new Button(width / 2 - 100, height / 2 + 40, 200, 40, "Back to main menu");
+        returnIntroHSButton = new Button(width / 2 - 100, height - height / 5, 200, 40, "Back to main menu");
     }
 
     public void initializeIntroButtons () {
@@ -605,6 +611,11 @@ public class Window extends PApplet {
              } else if (quitgameButton.isClicked(this)) {
                  exit();
              }
+         } else if (isHighscoresActive) {
+             if (returnIntroHSButton.isClicked(this)) {
+                 isIntroActive = true;
+                 isHighscoresActive = false; 
+             } 
          } else if (isMenuActive) {
              if (resumeButton.isClicked(this)) {
                  resumeGame();
@@ -786,6 +797,7 @@ public class Window extends PApplet {
         returnIntroButton.draw(this);
     }
 
+
     public void drawHighscore() {
         background(0, 0, 0, 150); 
         textFont(gameFont); 
@@ -795,15 +807,53 @@ public class Window extends PApplet {
         text("Highscores", width / 2, height / 2 - 250); 
 
         textSize(mediumFontSize - width/80); 
-        textAlign(TOP, LEFT); 
-        text("Player", width / 20, height / 10); 
-        textAlign(TOP, RIGHT); 
-        text("Time", width - width / 20, height / 10); 
+        textAlign(TOP, CENTER); 
+        text("Player", width / 5, height/5); 
+        textAlign(TOP, CENTER); 
+        text("Time", width - width /3, height/5); 
 
-        returnIntroButton.update(this);
-        returnIntroButton.draw(this);
+        JSONArray dataArray = loadJSONArray("highscores.json");
+
+        // Sort the JSON array by the "time" property
+        dataArray = sortJSONArray(dataArray, "time");
+
+        // Iterate over sorted data and display
+        for (int i = 0; i < dataArray.size(); i++) {
+            int bufferTitle = 0;
+            JSONObject entry = dataArray.getJSONObject(i);
+            String player = entry.getString("player");
+            int time = entry.getInt("time");
+
+
+            textAlign(TOP, CENTER); 
+            text(player, width / 5, height/5 + (i + 1 + bufferTitle) * 30); 
+            textAlign(TOP, CENTER); 
+            text(time, width - width / 3, height/5 + (i + 1 + bufferTitle) * 30); 
+
+            if(i == 10) {
+                break;
+            }
+        }
+
+        returnIntroHSButton.update(this);
+        returnIntroHSButton.draw(this);
     }
 
+    public JSONArray sortJSONArray(JSONArray array, String key) {
+        List<JSONObject> list = new ArrayList<>();
+        for (int i = 0; i < array.size(); i++) {
+            list.add(array.getJSONObject(i));
+        }
+
+        list.sort((a, b) -> Integer.compare(a.getInt(key), b.getInt(key)));
+
+        JSONArray sortedArray = new JSONArray();
+        for (JSONObject obj : list) {
+            sortedArray.append(obj);
+        }
+
+        return sortedArray;
+    }
 
     public void toggleFullscreen () {
         isFullscreen = !isFullscreen; // Toggle the fullscreen state
@@ -824,10 +874,9 @@ public class Window extends PApplet {
 
 
     public void savePlayerName() {
-        JSONArray dataArray;
         JSONObject newPlayerData = new JSONObject();
         newPlayerData.setString("player", playerName);
-        newPlayerData.setString("time", finalElapsedTime/60 + "min " + finalElapsedTime%60 + "sec");
+        newPlayerData.setInt("time", finalElapsedTime);
 
         File file = new File(sketchPath("highscores.json"));
         if (file.exists()) {
@@ -844,27 +893,16 @@ public class Window extends PApplet {
     public void startGame() {
         System.out.println("Game starts");
         startTime = millis();
-        // totalPausedTime = 0;
-        // gameActive = true;
-        // gamePaused = false;
     }
 
     public void pauseGame() {
         System.out.println("Game is paused");
         pauseStartTime = millis();
-        // if (gameActive && !gamePaused) {
-        //     gamePaused = true;
-        //     pauseStartTime = millis();
-        // }
     }
 
     public void resumeGame() {
         System.out.println("Game resumes");
         totalPausedTime += millis() - pauseStartTime;
-        // if (gamePaused) {
-        //     gamePaused = false;
-        //     totalPausedTime += millis() - pauseStartTime;
-        // }
     }
 
 

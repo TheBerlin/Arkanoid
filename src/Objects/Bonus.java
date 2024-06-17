@@ -8,7 +8,7 @@ public class Bonus {
     private int diameter;
     private float speedY;
     private int color;
-    private PImage spritImage;
+    private PImage spriteImage;
     private BonusType type; // type field
 
     public Bonus(int x, int y, int diameter, float speedY, int color, BonusType type) {
@@ -21,8 +21,8 @@ public class Bonus {
     }
 
     public void draw(PApplet applet) {
-        if (spritImage != null) {
-            applet.image(spritImage, x, y, diameter, diameter);
+        if (spriteImage != null) {
+            applet.image(spriteImage, x, y, diameter, diameter);
         }
         else {
             applet.fill(color);
@@ -37,7 +37,7 @@ public class Bonus {
 
 
     public void setSpriteImage(PImage spriteImage) {
-        this.spritImage = spriteImage;
+        this.spriteImage = spriteImage;
     }
 
     public boolean isCollected(Starship myStarship) {
